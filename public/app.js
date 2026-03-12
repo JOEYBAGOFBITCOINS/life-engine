@@ -20,6 +20,7 @@ function createInitialState() {
 }
 
 let state = createInitialState();
+let ageChart = null;
 
 function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
@@ -114,7 +115,10 @@ function renderSystems() {
 
 function renderTwin() {
   setZone("zone-head", state.systems.brain);
-  setZone("zone-torso", Math.round((state.systems.heart + state.systems.metabolism) / 2));
+  setZone(
+    "zone-torso",
+    Math.round((state.systems.heart + state.systems.metabolism) / 2)
+  );
   setZone("zone-left-arm", state.systems.immune);
   setZone("zone-right-arm", 100 - state.stressLoad);
   setZone("zone-left-leg", state.systems.mobility);
@@ -148,6 +152,102 @@ function log(message) {
   logEl.prepend(line);
 }
 
+function initChart() {
+  const canvas = document.getElementById("ageChart");
+
+  if (!canvas || typeof Chart === "undefined") {
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
+
+  ageChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [state.day],
+      datasets: [
+        {
+          label: "Chronological Age",
+          data: [state.chronologicalAge],
+          borderColor: "#38bdf8",
+          backgroundColor: "rgba(56, 189, 248, 0.15)",
+          borderWidth: 2,
+          tension: 0.3,
+          fill: false
+        },
+        {
+          label: "Biological Age",
+          data: [state.biologicalAge],
+          borderColor: "#22c55e",
+          backgroundColor: "rgba(34, 197, 94, 0.15)",
+          borderWidth: 2,
+          tension: 0.3,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          labels: {
+            color: "#f5f7fb"
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: "#b8c4d6"
+          },
+          grid: {
+            color: "rgba(184, 196, 214, 0.15)"
+          },
+          title: {
+            display: true,
+            text: "Simulation Day",
+            color: "#b8c4d6"
+          }
+        },
+        y: {
+          ticks: {
+            color: "#b8c4d6"
+          },
+          grid: {
+            color: "rgba(184, 196, 214, 0.15)"
+          },
+          title: {
+            display: true,
+            text: "Age",
+            color: "#b8c4d6"
+          }
+        }
+      }
+    }
+  });
+}
+
+function updateChart() {
+  if (!ageChart) {
+    return;
+  }
+
+  ageChart.data.labels.push(state.day);
+  ageChart.data.datasets[0].data.push(state.chronologicalAge);
+  ageChart.data.datasets[1].data.push(state.biologicalAge);
+  ageChart.update();
+}
+
+function resetChart() {
+  if (ageChart) {
+    ageChart.destroy();
+    ageChart = null;
+  }
+
+  initChart();
+}
+
 function apply(type) {
   if (type === "sleep") {
     state.repair = clamp(state.repair + 5);
@@ -155,6 +255,7 @@ function apply(type) {
     state.stressLoad = clamp(state.stressLoad - 5);
     state.systems.brain = clamp(state.systems.brain + 4);
     state.systems.recovery = clamp(state.systems.recovery + 7);
+    state.biologicalAge = Math.max(0, state.biologicalAge - 0.03);
     log("Deep sleep improved brain function, recovery, and repair.");
   }
 
@@ -164,6 +265,7 @@ function apply(type) {
     state.systems.heart = clamp(state.systems.heart + 4);
     state.systems.mobility = clamp(state.systems.mobility + 5);
     state.systems.metabolism = clamp(state.systems.metabolism + 3);
+    state.biologicalAge = Math.max(0, state.biologicalAge - 0.02);
     log("Exercise improved heart health, mobility, and metabolic performance.");
   }
 
@@ -172,6 +274,7 @@ function apply(type) {
     state.damage = clamp(state.damage - 2);
     state.systems.metabolism = clamp(state.systems.metabolism + 5);
     state.systems.immune = clamp(state.systems.immune + 3);
+    state.biologicalAge = Math.max(0, state.biologicalAge - 0.02);
     log("Nutrition improved metabolism, immune resilience, and repair.");
   }
 
@@ -179,6 +282,7 @@ function apply(type) {
     state.stressLoad = clamp(state.stressLoad - 8);
     state.inflammation = clamp(state.inflammation - 2);
     state.systems.brain = clamp(state.systems.brain + 3);
+    state.biologicalAge = Math.max(0, state.biologicalAge - 0.01);
     log("Meditation reduced stress load and improved neurological balance.");
   }
 
@@ -198,6 +302,7 @@ function apply(type) {
     state.systems.brain = clamp(state.systems.brain - 4);
     state.systems.heart = clamp(state.systems.heart - 3);
     state.systems.recovery = clamp(state.systems.recovery - 5);
+    state.biologicalAge += 0.05;
     log("Stress event increased inflammatory burden and reduced resilience.");
   }
 
@@ -219,11 +324,13 @@ function apply(type) {
     state.systems.recovery = clamp(state.systems.recovery - 2);
 
     log("30 days passed. Background aging increased wear across the twin.");
+    updateChart();
   }
 
   if (type === "reset") {
     state = createInitialState();
     document.getElementById("log").innerHTML = "";
+    resetChart();
     log("Digital Twin reset to baseline.");
   }
 
@@ -231,4 +338,5 @@ function apply(type) {
 }
 
 render();
+initChart();
 log("Digital Twin initialized.");

@@ -229,3 +229,15 @@ button.secondary {
     align-items: start;
   }
 }
+/* Aging Timeline Chart */
+
+#ageChart {
+  width: 100%;
+  max-height: 320px;
+}
+
+.panel canvas {
+  background: rgba(12, 20, 35, 0.7);
+  border-radius: 12px;
+  padding: 10px;
+}
