@@ -1,50 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Engine</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life Engine | Digital Twin</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
+  <div class="app">
+    <header class="header">
+      <div>
+        <h1>Life Engine</h1>
+        <p class="subtitle">Digital Twin Simulation v1</p>
+      </div>
+      <div id="statusBadge" class="badge">Initializing</div>
+    </header>
 
-<div class="app">
+    <section class="layout">
+      <div class="panel">
+        <h2>Core State</h2>
+        <div id="state" class="metrics"></div>
+      </div>
 
-<h1>Life Engine</h1>
+      <div class="panel twin-panel">
+        <h2>Digital Twin</h2>
 
-<div class="panel">
+        <div class="twin-wrapper">
+          <div class="twin head" id="zone-head">
+            <span>Brain</span>
+          </div>
 
-<h2>Current State</h2>
+          <div class="arms-row">
+            <div class="twin arm" id="zone-left-arm">
+              <span>Immune</span>
+            </div>
 
-<div id="state"></div>
+            <div class="twin torso" id="zone-torso">
+              <span>Heart / Metabolism</span>
+            </div>
 
-</div>
+            <div class="twin arm" id="zone-right-arm">
+              <span>Stress Load</span>
+            </div>
+          </div>
 
-<div class="panel">
+          <div class="legs-row">
+            <div class="twin leg" id="zone-left-leg">
+              <span>Mobility</span>
+            </div>
+            <div class="twin leg" id="zone-right-leg">
+              <span>Recovery</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-<h2>Interventions</h2>
+      <div class="panel">
+        <h2>Interventions</h2>
+        <div class="button-grid">
+          <button onclick="apply('sleep')">Sleep</button>
+          <button onclick="apply('exercise')">Exercise</button>
+          <button onclick="apply('nutrition')">Nutrition</button>
+          <button onclick="apply('meditation')">Meditation</button>
+          <button onclick="apply('therapy')">Repair Therapy</button>
+          <button onclick="apply('stress')">Stress Event</button>
+          <button onclick="apply('age')">Advance 30 Days</button>
+          <button onclick="apply('reset')" class="secondary">Reset</button>
+        </div>
+      </div>
+    </section>
 
-<button onclick="apply('sleep')">Sleep</button>
-<button onclick="apply('exercise')">Exercise</button>
-<button onclick="apply('nutrition')">Nutrition</button>
-<button onclick="apply('stress')">Stress</button>
-<button onclick="apply('therapy')">Repair Therapy</button>
-<button onclick="apply('age')">Advance 30 Days</button>
+    <section class="panel">
+      <h2>Body Systems</h2>
+      <div id="systems" class="systems-grid"></div>
+    </section>
 
-</div>
+    <section class="panel">
+      <h2>System Log</h2>
+      <div id="log" class="log"></div>
+    </section>
+  </div>
 
-<div class="panel">
-
-<h2>System Log</h2>
-
-<div id="log"></div>
-
-</div>
-
-</div>
-
-<script src="app.js"></script>
-
+  <script src="app.js"></script>
 </body>
 </html>

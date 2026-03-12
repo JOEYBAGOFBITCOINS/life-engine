@@ -1,88 +1,234 @@
-const state = {
-day:0,
-biologicalAge:40,
-vitality:70,
-repair:60,
-inflammation:30,
-damage:20
-};
-
-function escapeVelocity(){
-
-const repairPower =
-state.repair + state.vitality;
-
-const decay =
-state.damage + state.inflammation;
-
-return repairPower - decay;
-
+function createInitialState() {
+  return {
+    day: 0,
+    chronologicalAge: 40,
+    biologicalAge: 38.8,
+    vitality: 72,
+    repair: 60,
+    inflammation: 30,
+    damage: 20,
+    stressLoad: 35,
+    systems: {
+      brain: 74,
+      heart: 71,
+      metabolism: 69,
+      immune: 66,
+      mobility: 73,
+      recovery: 62
+    }
+  };
 }
 
-function render(){
+let state = createInitialState();
 
-document.getElementById("state").innerHTML = `
-Day: ${state.day}<br>
-Biological Age: ${state.biologicalAge.toFixed(2)}<br>
-Vitality: ${state.vitality}<br>
-Repair: ${state.repair}<br>
-Inflammation: ${state.inflammation}<br>
-Damage: ${state.damage}<br>
-Escape Velocity: ${escapeVelocity()}
-`;
-
+function clamp(value, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, value));
 }
 
-function log(msg){
+function escapeVelocity() {
+  const repairPower =
+    state.repair +
+    state.vitality +
+    averageSystemsScore() * 0.5;
 
-const el = document.getElementById("log");
+  const decayForce =
+    state.damage +
+    state.inflammation +
+    state.stressLoad * 0.5;
 
-el.innerHTML += `<div>${msg}</div>`;
-
+  return Math.round(repairPower - decayForce);
 }
 
-function apply(type){
-
-if(type==="sleep"){
-state.repair+=4
-state.inflammation-=2
-log("Sleep improved repair")
+function averageSystemsScore() {
+  const values = Object.values(state.systems);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return Math.round(total / values.length);
 }
 
-if(type==="exercise"){
-state.vitality+=5
-state.inflammation-=1
-log("Exercise increased vitality")
+function twinStatusLabel() {
+  const velocity = escapeVelocity();
+
+  if (velocity >= 50) {
+    return "Escape Velocity Rising";
+  }
+
+  if (velocity >= 20) {
+    return "Repair Dominant";
+  }
+
+  if (velocity >= 0) {
+    return "Stable";
+  }
+
+  return "Aging Dominant";
 }
 
-if(type==="nutrition"){
-state.repair+=4
-state.damage-=1
-log("Nutrition helped repair")
+function scoreClass(score) {
+  if (score >= 70) return "zone-good";
+  if (score >= 45) return "zone-warn";
+  return "zone-bad";
 }
 
-if(type==="stress"){
-state.inflammation+=6
-state.vitality-=3
-log("Stress increased inflammation")
+function renderState() {
+  const stateEl = document.getElementById("state");
+
+  const cards = [
+    ["Day", state.day],
+    ["Chronological Age", state.chronologicalAge.toFixed(2)],
+    ["Biological Age", state.biologicalAge.toFixed(2)],
+    ["Vitality", state.vitality],
+    ["Repair", state.repair],
+    ["Inflammation", state.inflammation],
+    ["Damage", state.damage],
+    ["Stress Load", state.stressLoad],
+    ["System Average", averageSystemsScore()],
+    ["Escape Velocity", escapeVelocity()]
+  ];
+
+  stateEl.innerHTML = cards
+    .map(([label, value]) => {
+      return `
+        <div class="metric-card">
+          <div class="metric-label">${label}</div>
+          <div class="metric-value">${value}</div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
-if(type==="therapy"){
-state.damage-=5
-state.repair+=6
-log("Repair therapy applied")
+function renderSystems() {
+  const systemsEl = document.getElementById("systems");
+
+  systemsEl.innerHTML = Object.entries(state.systems)
+    .map(([key, value]) => {
+      return `
+        <div class="system-card">
+          <div class="system-label">${formatLabel(key)}</div>
+          <div class="system-value">${value}</div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
-if(type==="age"){
-state.day+=30
-state.biologicalAge+=0.08
-state.damage+=2
-state.inflammation+=1
-log("Time advanced")
+function renderTwin() {
+  setZone("zone-head", state.systems.brain);
+  setZone("zone-torso", Math.round((state.systems.heart + state.systems.metabolism) / 2));
+  setZone("zone-left-arm", state.systems.immune);
+  setZone("zone-right-arm", 100 - state.stressLoad);
+  setZone("zone-left-leg", state.systems.mobility);
+  setZone("zone-right-leg", state.systems.recovery);
+
+  const badge = document.getElementById("statusBadge");
+  badge.textContent = twinStatusLabel();
 }
 
-render()
-
+function setZone(id, score) {
+  const el = document.getElementById(id);
+  el.classList.remove("zone-good", "zone-warn", "zone-bad");
+  el.classList.add(scoreClass(score));
 }
 
-render()
+function formatLabel(key) {
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function render() {
+  renderState();
+  renderSystems();
+  renderTwin();
+}
+
+function log(message) {
+  const logEl = document.getElementById("log");
+  const line = document.createElement("div");
+  line.className = "log-entry";
+  line.textContent = `Day ${state.day}: ${message}`;
+  logEl.prepend(line);
+}
+
+function apply(type) {
+  if (type === "sleep") {
+    state.repair = clamp(state.repair + 5);
+    state.inflammation = clamp(state.inflammation - 3);
+    state.stressLoad = clamp(state.stressLoad - 5);
+    state.systems.brain = clamp(state.systems.brain + 4);
+    state.systems.recovery = clamp(state.systems.recovery + 7);
+    log("Deep sleep improved brain function, recovery, and repair.");
+  }
+
+  if (type === "exercise") {
+    state.vitality = clamp(state.vitality + 6);
+    state.inflammation = clamp(state.inflammation - 2);
+    state.systems.heart = clamp(state.systems.heart + 4);
+    state.systems.mobility = clamp(state.systems.mobility + 5);
+    state.systems.metabolism = clamp(state.systems.metabolism + 3);
+    log("Exercise improved heart health, mobility, and metabolic performance.");
+  }
+
+  if (type === "nutrition") {
+    state.repair = clamp(state.repair + 4);
+    state.damage = clamp(state.damage - 2);
+    state.systems.metabolism = clamp(state.systems.metabolism + 5);
+    state.systems.immune = clamp(state.systems.immune + 3);
+    log("Nutrition improved metabolism, immune resilience, and repair.");
+  }
+
+  if (type === "meditation") {
+    state.stressLoad = clamp(state.stressLoad - 8);
+    state.inflammation = clamp(state.inflammation - 2);
+    state.systems.brain = clamp(state.systems.brain + 3);
+    log("Meditation reduced stress load and improved neurological balance.");
+  }
+
+  if (type === "therapy") {
+    state.damage = clamp(state.damage - 6);
+    state.repair = clamp(state.repair + 8);
+    state.biologicalAge = Math.max(0, state.biologicalAge - 0.15);
+    state.systems.recovery = clamp(state.systems.recovery + 5);
+    state.systems.immune = clamp(state.systems.immune + 4);
+    log("Repair therapy reduced damage and improved biological age trajectory.");
+  }
+
+  if (type === "stress") {
+    state.stressLoad = clamp(state.stressLoad + 10);
+    state.inflammation = clamp(state.inflammation + 6);
+    state.vitality = clamp(state.vitality - 4);
+    state.systems.brain = clamp(state.systems.brain - 4);
+    state.systems.heart = clamp(state.systems.heart - 3);
+    state.systems.recovery = clamp(state.systems.recovery - 5);
+    log("Stress event increased inflammatory burden and reduced resilience.");
+  }
+
+  if (type === "age") {
+    state.day += 30;
+    state.chronologicalAge += 30 / 365;
+    state.biologicalAge += 0.12;
+    state.damage = clamp(state.damage + 3);
+    state.inflammation = clamp(state.inflammation + 2);
+    state.stressLoad = clamp(state.stressLoad + 1);
+    state.vitality = clamp(state.vitality - 1);
+    state.repair = clamp(state.repair - 1);
+
+    state.systems.brain = clamp(state.systems.brain - 1);
+    state.systems.heart = clamp(state.systems.heart - 1);
+    state.systems.metabolism = clamp(state.systems.metabolism - 1);
+    state.systems.immune = clamp(state.systems.immune - 1);
+    state.systems.mobility = clamp(state.systems.mobility - 1);
+    state.systems.recovery = clamp(state.systems.recovery - 2);
+
+    log("30 days passed. Background aging increased wear across the twin.");
+  }
+
+  if (type === "reset") {
+    state = createInitialState();
+    document.getElementById("log").innerHTML = "";
+    log("Digital Twin reset to baseline.");
+  }
+
+  render();
+}
+
+render();
+log("Digital Twin initialized.");
