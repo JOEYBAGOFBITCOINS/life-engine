@@ -1,5 +1,7 @@
 Life Engine | Digital Twin Simulation
 
+https://joeybagofbitcoins.github.io/life-engine/
+
 A lightweight digital twin simulation exploring how lifestyle, stress, and repair mechanisms affect biological aging over time.
 
 This project was built in GitHub Codespaces while I was supposed to be working on other homework and building a business. Instead, curiosity took over and a small longevity simulation engine emerged.
