@@ -21,9 +21,16 @@ function createInitialState() {
 
 let state = createInitialState();
 let ageChart = null;
+let simulationTimer = null;
 
 function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, value));
+}
+
+function averageSystemsScore() {
+  const values = Object.values(state.systems);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return Math.round(total / values.length);
 }
 
 function escapeVelocity() {
@@ -40,34 +47,32 @@ function escapeVelocity() {
   return Math.round(repairPower - decayForce);
 }
 
-function averageSystemsScore() {
-  const values = Object.values(state.systems);
-  const total = values.reduce((sum, value) => sum + value, 0);
-  return Math.round(total / values.length);
-}
-
 function twinStatusLabel() {
   const velocity = escapeVelocity();
 
-  if (velocity >= 50) {
-    return "Escape Velocity Rising";
-  }
-
-  if (velocity >= 20) {
-    return "Repair Dominant";
-  }
-
-  if (velocity >= 0) {
-    return "Stable";
-  }
-
+  if (velocity >= 50) return "Escape Velocity Rising";
+  if (velocity >= 20) return "Repair Dominant";
+  if (velocity >= 0) return "Stable";
   return "Aging Dominant";
+}
+
+function reactorClass() {
+  const velocity = escapeVelocity();
+
+  if (velocity >= 50) return "reactor-prime";
+  if (velocity >= 20) return "reactor-good";
+  if (velocity >= 0) return "reactor-warn";
+  return "reactor-danger";
 }
 
 function scoreClass(score) {
   if (score >= 70) return "zone-good";
   if (score >= 45) return "zone-warn";
   return "zone-bad";
+}
+
+function formatLabel(key) {
+  return key.charAt(0).toUpperCase() + key.slice(1);
 }
 
 function renderState() {
@@ -87,14 +92,12 @@ function renderState() {
   ];
 
   stateEl.innerHTML = cards
-    .map(([label, value]) => {
-      return `
-        <div class="metric-card">
-          <div class="metric-label">${label}</div>
-          <div class="metric-value">${value}</div>
-        </div>
-      `;
-    })
+    .map(([label, value]) => `
+      <div class="metric-card">
+        <div class="metric-label">${label}</div>
+        <div class="metric-value">${value}</div>
+      </div>
+    `)
     .join("");
 }
 
@@ -102,30 +105,13 @@ function renderSystems() {
   const systemsEl = document.getElementById("systems");
 
   systemsEl.innerHTML = Object.entries(state.systems)
-    .map(([key, value]) => {
-      return `
-        <div class="system-card">
-          <div class="system-label">${formatLabel(key)}</div>
-          <div class="system-value">${value}</div>
-        </div>
-      `;
-    })
+    .map(([key, value]) => `
+      <div class="system-card">
+        <div class="system-label">${formatLabel(key)}</div>
+        <div class="system-value">${value}</div>
+      </div>
+    `)
     .join("");
-}
-
-function renderTwin() {
-  setZone("zone-head", state.systems.brain);
-  setZone(
-    "zone-torso",
-    Math.round((state.systems.heart + state.systems.metabolism) / 2)
-  );
-  setZone("zone-left-arm", state.systems.immune);
-  setZone("zone-right-arm", 100 - state.stressLoad);
-  setZone("zone-left-leg", state.systems.mobility);
-  setZone("zone-right-leg", state.systems.recovery);
-
-  const badge = document.getElementById("statusBadge");
-  badge.textContent = twinStatusLabel();
 }
 
 function setZone(id, score) {
@@ -134,14 +120,34 @@ function setZone(id, score) {
   el.classList.add(scoreClass(score));
 }
 
-function formatLabel(key) {
-  return key.charAt(0).toUpperCase() + key.slice(1);
+function renderTwin() {
+  setZone("zone-head", state.systems.brain);
+  setZone("zone-torso", Math.round((state.systems.heart + state.systems.metabolism) / 2));
+  setZone("zone-left-arm", state.systems.immune);
+  setZone("zone-right-arm", 100 - state.stressLoad);
+  setZone("zone-left-leg", state.systems.mobility);
+  setZone("zone-right-leg", state.systems.recovery);
+
+  document.getElementById("statusBadge").textContent = twinStatusLabel();
+}
+
+function renderReactor() {
+  const reactor = document.getElementById("reactorCore");
+  const valueEl = document.getElementById("reactorValue");
+  const stateEl = document.getElementById("reactorState");
+
+  reactor.classList.remove("reactor-danger", "reactor-warn", "reactor-good", "reactor-prime");
+  reactor.classList.add(reactorClass());
+
+  valueEl.textContent = escapeVelocity();
+  stateEl.textContent = twinStatusLabel();
 }
 
 function render() {
   renderState();
   renderSystems();
   renderTwin();
+  renderReactor();
 }
 
 function log(message) {
@@ -229,9 +235,7 @@ function initChart() {
 }
 
 function updateChart() {
-  if (!ageChart) {
-    return;
-  }
+  if (!ageChart) return;
 
   ageChart.data.labels.push(state.day);
   ageChart.data.datasets[0].data.push(state.chronologicalAge);
@@ -244,11 +248,15 @@ function resetChart() {
     ageChart.destroy();
     ageChart = null;
   }
-
   initChart();
 }
 
-function apply(type) {
+function addChartPointIfNeeded() {
+  if (!ageChart) return;
+  updateChart();
+}
+
+function apply(type, silent = false) {
   if (type === "sleep") {
     state.repair = clamp(state.repair + 5);
     state.inflammation = clamp(state.inflammation - 3);
@@ -256,7 +264,7 @@ function apply(type) {
     state.systems.brain = clamp(state.systems.brain + 4);
     state.systems.recovery = clamp(state.systems.recovery + 7);
     state.biologicalAge = Math.max(0, state.biologicalAge - 0.03);
-    log("Deep sleep improved brain function, recovery, and repair.");
+    if (!silent) log("Deep sleep improved brain function, recovery, and repair.");
   }
 
   if (type === "exercise") {
@@ -266,7 +274,7 @@ function apply(type) {
     state.systems.mobility = clamp(state.systems.mobility + 5);
     state.systems.metabolism = clamp(state.systems.metabolism + 3);
     state.biologicalAge = Math.max(0, state.biologicalAge - 0.02);
-    log("Exercise improved heart health, mobility, and metabolic performance.");
+    if (!silent) log("Exercise improved heart health, mobility, and metabolic performance.");
   }
 
   if (type === "nutrition") {
@@ -275,7 +283,7 @@ function apply(type) {
     state.systems.metabolism = clamp(state.systems.metabolism + 5);
     state.systems.immune = clamp(state.systems.immune + 3);
     state.biologicalAge = Math.max(0, state.biologicalAge - 0.02);
-    log("Nutrition improved metabolism, immune resilience, and repair.");
+    if (!silent) log("Nutrition improved metabolism, immune resilience, and repair.");
   }
 
   if (type === "meditation") {
@@ -283,7 +291,7 @@ function apply(type) {
     state.inflammation = clamp(state.inflammation - 2);
     state.systems.brain = clamp(state.systems.brain + 3);
     state.biologicalAge = Math.max(0, state.biologicalAge - 0.01);
-    log("Meditation reduced stress load and improved neurological balance.");
+    if (!silent) log("Meditation reduced stress load and improved neurological balance.");
   }
 
   if (type === "therapy") {
@@ -292,7 +300,7 @@ function apply(type) {
     state.biologicalAge = Math.max(0, state.biologicalAge - 0.15);
     state.systems.recovery = clamp(state.systems.recovery + 5);
     state.systems.immune = clamp(state.systems.immune + 4);
-    log("Repair therapy reduced damage and improved biological age trajectory.");
+    if (!silent) log("Repair therapy reduced damage and improved biological age trajectory.");
   }
 
   if (type === "stress") {
@@ -303,31 +311,15 @@ function apply(type) {
     state.systems.heart = clamp(state.systems.heart - 3);
     state.systems.recovery = clamp(state.systems.recovery - 5);
     state.biologicalAge += 0.05;
-    log("Stress event increased inflammatory burden and reduced resilience.");
+    if (!silent) log("Stress event increased inflammatory burden and reduced resilience.");
   }
 
   if (type === "age") {
-    state.day += 30;
-    state.chronologicalAge += 30 / 365;
-    state.biologicalAge += 0.12;
-    state.damage = clamp(state.damage + 3);
-    state.inflammation = clamp(state.inflammation + 2);
-    state.stressLoad = clamp(state.stressLoad + 1);
-    state.vitality = clamp(state.vitality - 1);
-    state.repair = clamp(state.repair - 1);
-
-    state.systems.brain = clamp(state.systems.brain - 1);
-    state.systems.heart = clamp(state.systems.heart - 1);
-    state.systems.metabolism = clamp(state.systems.metabolism - 1);
-    state.systems.immune = clamp(state.systems.immune - 1);
-    state.systems.mobility = clamp(state.systems.mobility - 1);
-    state.systems.recovery = clamp(state.systems.recovery - 2);
-
-    log("30 days passed. Background aging increased wear across the twin.");
-    updateChart();
+    advanceMonth(silent);
   }
 
   if (type === "reset") {
+    pauseSimulation();
     state = createInitialState();
     document.getElementById("log").innerHTML = "";
     resetChart();
@@ -335,6 +327,85 @@ function apply(type) {
   }
 
   render();
+}
+
+function advanceMonth(silent = false) {
+  state.day += 30;
+  state.chronologicalAge += 30 / 365;
+  state.biologicalAge += 0.12;
+  state.damage = clamp(state.damage + 3);
+  state.inflammation = clamp(state.inflammation + 2);
+  state.stressLoad = clamp(state.stressLoad + 1);
+  state.vitality = clamp(state.vitality - 1);
+  state.repair = clamp(state.repair - 1);
+
+  state.systems.brain = clamp(state.systems.brain - 1);
+  state.systems.heart = clamp(state.systems.heart - 1);
+  state.systems.metabolism = clamp(state.systems.metabolism - 1);
+  state.systems.immune = clamp(state.systems.immune - 1);
+  state.systems.mobility = clamp(state.systems.mobility - 1);
+  state.systems.recovery = clamp(state.systems.recovery - 2);
+
+  if (!silent) {
+    log("30 days passed. Background aging increased wear across the twin.");
+  }
+
+  updateChart();
+}
+
+function runAutonomousStep() {
+  const roll = Math.random();
+
+  advanceMonth(true);
+
+  if (roll < 0.22) {
+    apply("exercise", true);
+    log("Autonomous event: exercise improved systemic health.");
+  } else if (roll < 0.36) {
+    apply("sleep", true);
+    log("Autonomous event: restorative sleep improved recovery.");
+  } else if (roll < 0.49) {
+    apply("nutrition", true);
+    log("Autonomous event: strong nutrition supported repair.");
+  } else if (roll < 0.58) {
+    apply("meditation", true);
+    log("Autonomous event: meditation reduced stress load.");
+  } else if (roll < 0.69) {
+    apply("stress", true);
+    log("Autonomous event: stress burden reduced resilience.");
+  } else if (roll < 0.76) {
+    apply("therapy", true);
+    log("Autonomous event: repair therapy improved aging trajectory.");
+  } else {
+    log("Autonomous event: baseline month progression.");
+  }
+
+  render();
+}
+
+function startSimulation() {
+  if (simulationTimer) return;
+
+  simulationTimer = setInterval(() => {
+    runAutonomousStep();
+  }, 2000);
+
+  log("Autonomous simulation started.");
+}
+
+function pauseSimulation() {
+  if (!simulationTimer) return;
+
+  clearInterval(simulationTimer);
+  simulationTimer = null;
+  log("Autonomous simulation paused.");
+}
+
+function fastForwardYear() {
+  for (let i = 0; i < 12; i += 1) {
+    runAutonomousStep();
+  }
+  log("Fast-forwarded 1 simulated year.");
 }
 
 render();

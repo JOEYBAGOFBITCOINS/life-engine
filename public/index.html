@@ -11,10 +11,51 @@
     <header class="header">
       <div>
         <h1>Life Engine</h1>
-        <p class="subtitle">Digital Twin Simulation v1</p>
+        <p class="subtitle">Digital Twin Simulation v2</p>
       </div>
       <div id="statusBadge" class="badge">Initializing</div>
     </header>
+
+    <section class="hero-grid">
+      <div class="panel reactor-panel">
+        <h2>Longevity Reactor Core</h2>
+        <div class="reactor-shell">
+          <div id="reactorCore" class="reactor-core">
+            <div class="reactor-inner">
+              <div class="reactor-label">Escape Velocity</div>
+              <div id="reactorValue" class="reactor-value">0</div>
+              <div id="reactorState" class="reactor-state">Stable</div>
+            </div>
+          </div>
+        </div>
+        <div class="reactor-legend">
+          <span class="legend-item danger">Aging Dominant</span>
+          <span class="legend-item warn">Stable</span>
+          <span class="legend-item good">Repair Dominant</span>
+          <span class="legend-item prime">Escape Velocity</span>
+        </div>
+      </div>
+
+      <div class="panel controls-panel">
+        <h2>Simulation Controls</h2>
+        <div class="button-grid">
+          <button onclick="apply('sleep')">Sleep</button>
+          <button onclick="apply('exercise')">Exercise</button>
+          <button onclick="apply('nutrition')">Nutrition</button>
+          <button onclick="apply('meditation')">Meditation</button>
+          <button onclick="apply('therapy')">Repair Therapy</button>
+          <button onclick="apply('stress')">Stress Event</button>
+          <button onclick="apply('age')">Advance 30 Days</button>
+          <button onclick="apply('reset')" class="secondary">Reset</button>
+        </div>
+
+        <div class="sim-controls">
+          <button onclick="startSimulation()">Start Simulation</button>
+          <button onclick="pauseSimulation()" class="secondary">Pause Simulation</button>
+          <button onclick="fastForwardYear()">Fast Forward 1 Year</button>
+        </div>
+      </div>
+    </section>
 
     <section class="layout">
       <div class="panel">
@@ -56,23 +97,9 @@
       </div>
 
       <div class="panel">
-        <h2>Interventions</h2>
-        <div class="button-grid">
-          <button onclick="apply('sleep')">Sleep</button>
-          <button onclick="apply('exercise')">Exercise</button>
-          <button onclick="apply('nutrition')">Nutrition</button>
-          <button onclick="apply('meditation')">Meditation</button>
-          <button onclick="apply('therapy')">Repair Therapy</button>
-          <button onclick="apply('stress')">Stress Event</button>
-          <button onclick="apply('age')">Advance 30 Days</button>
-          <button onclick="apply('reset')" class="secondary">Reset</button>
-        </div>
+        <h2>Body Systems</h2>
+        <div id="systems" class="systems-grid"></div>
       </div>
-    </section>
-
-    <section class="panel">
-      <h2>Body Systems</h2>
-      <div id="systems" class="systems-grid"></div>
     </section>
 
     <section class="panel">
