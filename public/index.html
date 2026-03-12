@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Engine</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<div class="app">
+
+<h1>Life Engine</h1>
+
+<div class="panel">
+
+<h2>Current State</h2>
+
+<div id="state"></div>
+
+</div>
+
+<div class="panel">
+
+<h2>Interventions</h2>
+
+<button onclick="apply('sleep')">Sleep</button>
+<button onclick="apply('exercise')">Exercise</button>
+<button onclick="apply('nutrition')">Nutrition</button>
+<button onclick="apply('stress')">Stress</button>
+<button onclick="apply('therapy')">Repair Therapy</button>
+<button onclick="apply('age')">Advance 30 Days</button>
+
+</div>
+
+<div class="panel">
+
+<h2>System Log</h2>
+
+<div id="log"></div>
+
+</div>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
